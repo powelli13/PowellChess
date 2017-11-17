@@ -7,14 +7,22 @@ namespace PowellChess
     /// <summary>
     /// This is the main type for your game.
     /// </summary>
-    public class Game1 : Game
+    public class Main : Game
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
-        public Game1()
+        // sprite variables for squares and pieces
+        private Texture2D lightSquare;
+        private Texture2D darkSquare;
+
+        public Main()
         {
             graphics = new GraphicsDeviceManager(this);
+            graphics.PreferredBackBufferWidth = 1280;
+            graphics.PreferredBackBufferHeight = 960;
+            graphics.ApplyChanges();
+
             Content.RootDirectory = "Content";
         }
 
@@ -26,9 +34,11 @@ namespace PowellChess
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
+            
             base.Initialize();
+
+            // make standard mouse cursor visible
+            this.IsMouseVisible = true;
         }
 
         /// <summary>
@@ -40,7 +50,9 @@ namespace PowellChess
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            // sprites for board squares
+            lightSquare = this.Content.Load<Texture2D>("light_square");
+            darkSquare = this.Content.Load<Texture2D>("dark_square");
         }
 
         /// <summary>
@@ -73,9 +85,25 @@ namespace PowellChess
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.LightGray);
 
-            // TODO: Add your drawing code here
+            spriteBatch.Begin();
+
+            // draw board squares
+            for (int x = 0; x < 8; x++)
+            {
+                for (int y = 0; y < 8; y++)
+                {
+                    if ((x + y) % 2 == 0)
+                    {
+                        spriteBatch.Draw(lightSquare, new Vector2(x*72 + 72, y*72 + 72), Color.White);
+                    } else {
+                        spriteBatch.Draw(darkSquare, new Vector2(x*72 + 72, y*72 + 72), Color.White);
+                    }
+                }
+            }
+
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }
