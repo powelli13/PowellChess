@@ -55,6 +55,10 @@ namespace PowellChess
             };
         }
         
+        /// <summary>
+        /// Returns the current status of all squares.
+        /// </summary>
+        /// <returns>int[64]</returns>
         public int[] RetrieveBoardState()
         {
             int[] ret = new int[64];
@@ -66,7 +70,21 @@ namespace PowellChess
 
             return ret;
         }
-        
+
+        /// <summary>
+        /// Return a boolean distinguishing whether the clicked square
+        /// has a piece of color.
+        /// </summary>
+        /// <param name="color">0 for white 1 for black</param>
+        /// <returns>bool</returns>
+        public bool HasPiece(int color)
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public void DiscoverMoves()
         {
             return;

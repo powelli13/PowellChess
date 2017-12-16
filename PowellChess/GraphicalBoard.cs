@@ -7,24 +7,75 @@ using System;
 
 namespace PowellChess
 {
+
+    /// <summary>
+    /// Constants for the graphical display.
+    /// </summary>
+    public class DisplaySettings
+    {
+        public const int squareSize = 72;
+        public const int edgePadding = 72;
+    }
+
+
+    /// <summary>
+    /// Used to control the display, click handling and graphical manipulations of squares.
+    /// </summary>
+    public class Square
+    {
+        /// <summary>
+        /// Propertires used for drawing square.
+        /// </summary>
+        public Rectangle rect;
+        public Texture2D texture;
+        public Color color = Color.White;
+
+        public int piece = 0;
+        public bool highlighted = false;
+
+        private int boardIndex;
+        
+
+        public Square(int x, int y, Texture2D t, int bi)
+        {
+            rect = new Rectangle(x, y, DisplaySettings.squareSize, DisplaySettings.squareSize);
+            texture = t;
+            boardIndex = bi;
+        }
+
+        public void Draw(SpriteBatch sb)
+        {
+            sb.Draw(texture, rect, color);
+            /*
+            if (highlighted)
+            {
+
+            }
+            */
+            /*
+            if (pieces != 0)
+            {
+            
+            }
+            */
+        }
+    }
+
     /// <summary>
     /// This is the main type for your game.
     /// </summary>
     public class GraphicalBoard : Game
     {
-        GraphicsDeviceManager graphics;
-        SpriteBatch spriteBatch;
+        private GraphicsDeviceManager graphics;
+        private SpriteBatch spriteBatch;
+        private Square[] squares = new Square[64];
 
-        LogicalBoard logicalBoard;
+        private LogicalBoard logicalBoard;
 
 
         // input handling
         private MouseState mouseState;
         private MouseState lastMouseState;
-        
-        // board display constants
-        const int squareSize = 72;
-        const int edgePadding = 72;
 
         // sprite variables for squares and pieces
         private Texture2D lightSquare;
@@ -59,8 +110,32 @@ namespace PowellChess
             // make standard mouse cursor visible
             IsMouseVisible = true;
 
-            // creat logical board
+            // create logical board
             logicalBoard = new LogicalBoard();
+
+            // create and load squares
+            int boardIndex = 0;
+            int xPos;
+            int yPos;
+
+            // spans across one row at a time starting with 8th row
+            for (int y = 0; y < 8; y++)
+            {
+                for (int x = 0; x < 8; x++)
+                {
+                    xPos = x * DisplaySettings.squareSize + DisplaySettings.edgePadding;
+                    yPos = y * DisplaySettings.squareSize + DisplaySettings.edgePadding;
+
+                    if ((x + y) % 2 == 0)
+                    {
+                        squares[boardIndex] = new Square(xPos, yPos, lightSquare, boardIndex);
+                    } else {
+                        squares[boardIndex] = new Square(xPos, yPos, darkSquare, boardIndex);
+                    }
+
+                    boardIndex++;
+                }
+            }
         }
 
         /// <summary>
@@ -132,13 +207,19 @@ namespace PowellChess
             spriteBatch.Begin();
 
             // draw board squares
+            for (int si = 0; si < 64; si++)
+            {
+                squares[si].Draw(spriteBatch);
+            }
+
+            /*
             int xPos;
             int yPos;
             int boardIndex = 0;
             Vector2 tempVect = new Vector2(0, 0);
             Rectangle rect = new Rectangle(0, 0, squareSize, squareSize);
 
-            // spans across one row at a time starting with 8th row
+
             for (int y = 0; y < 8; y++)
             {
                 for (int x = 0; x < 8; x++)
@@ -172,12 +253,10 @@ namespace PowellChess
                         //TODO verify that x + y is in keys
                         spriteBatch.Draw(pieceSprites[boardState[boardIndex]], tempVect, Color.White);
                     }
-                    /*else if (boardState[x + y] == -1) {
-                        Console.WriteLine()
-                    }*/
                     boardIndex++;
                 }
             }
+            */
 
             spriteBatch.End();
 
