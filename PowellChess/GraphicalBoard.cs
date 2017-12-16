@@ -10,13 +10,18 @@ namespace PowellChess
     /// <summary>
     /// This is the main type for your game.
     /// </summary>
-    public class Main : Game
+    public class GraphicalBoard : Game
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
         LogicalBoard logicalBoard;
 
+
+        // input handling
+        private MouseState mouseState;
+        private MouseState lastMouseState;
+        
         // board display constants
         const int squareSize = 72;
         const int edgePadding = 72;
@@ -24,12 +29,13 @@ namespace PowellChess
         // sprite variables for squares and pieces
         private Texture2D lightSquare;
         private Texture2D darkSquare;
+        private Texture2D highlightSquare;
 
         private Texture2D whiteKing;
 
         private Dictionary<int, Texture2D> pieceSprites;
 
-        public Main()
+        public GraphicalBoard()
         {
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferWidth = 1280;
@@ -51,7 +57,7 @@ namespace PowellChess
             base.Initialize();
 
             // make standard mouse cursor visible
-            this.IsMouseVisible = true;
+            IsMouseVisible = true;
 
             // creat logical board
             logicalBoard = new LogicalBoard();
@@ -68,9 +74,10 @@ namespace PowellChess
             pieceSprites = new Dictionary<int, Texture2D>();
 
             // sprites for board squares and pieces
-            lightSquare = this.Content.Load<Texture2D>("light_square");
-            darkSquare = this.Content.Load<Texture2D>("dark_square");
-            pieceSprites[2] = this.Content.Load<Texture2D>("white_king");
+            lightSquare = Content.Load<Texture2D>("light_square");
+            darkSquare = Content.Load<Texture2D>("dark_square");
+            highlightSquare = Content.Load<Texture2D>("highlight_square");
+            pieceSprites[2] = Content.Load<Texture2D>("white_king");
         }
 
         /// <summary>
@@ -91,10 +98,19 @@ namespace PowellChess
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
-
-            // TODO: Add your update logic here
+            
+            //HighlightHoverSquare();
+            //TODO handle click events
 
             base.Update(gameTime);
+        }
+
+        /// <summary>
+        /// Highlights any square that the mouse is hovering over.
+        /// </summary>
+        protected void HighlightHoverSquare()
+        {
+
         }
 
         /// <summary>
@@ -107,12 +123,20 @@ namespace PowellChess
             int[] boardState = logicalBoard.RetrieveBoardState();
             GraphicsDevice.Clear(Color.LightGray);
 
+            // TODO move some of this mouse stuff out of the draw method
+            // Used to highlight squares that the mouse is hovering over
+            lastMouseState = mouseState;
+            mouseState = Mouse.GetState();
+            Point mousePosition = new Point(mouseState.X, mouseState.Y);
+
             spriteBatch.Begin();
 
             // draw board squares
             int xPos;
             int yPos;
             int boardIndex = 0;
+            Vector2 tempVect = new Vector2(0, 0);
+            Rectangle rect = new Rectangle(0, 0, squareSize, squareSize);
 
             // spans across one row at a time starting with 8th row
             for (int y = 0; y < 8; y++)
@@ -122,12 +146,22 @@ namespace PowellChess
 
                     xPos = x * squareSize + edgePadding;
                     yPos = y * squareSize + edgePadding;
+                    tempVect.X = xPos;
+                    tempVect.Y = yPos;
+
+                    rect.X = xPos;
+                    rect.Y = yPos;
 
                     if ((x + y) % 2 == 0)
                     {
-                        spriteBatch.Draw(lightSquare, new Vector2(xPos, yPos), Color.White);
+                        spriteBatch.Draw(lightSquare, tempVect, Color.White);
                     } else {
-                        spriteBatch.Draw(darkSquare, new Vector2(xPos, yPos), Color.White);
+                        spriteBatch.Draw(darkSquare, tempVect, Color.White);
+                    }
+
+                    if (rect.Contains(mousePosition))
+                    {
+                        spriteBatch.Draw(highlightSquare, tempVect, Color.White);
                     }
 
                     //TODO ensure no negatives
@@ -136,7 +170,7 @@ namespace PowellChess
                     {
 
                         //TODO verify that x + y is in keys
-                        spriteBatch.Draw(pieceSprites[boardState[boardIndex]], new Vector2(xPos, yPos), Color.White);
+                        spriteBatch.Draw(pieceSprites[boardState[boardIndex]], tempVect, Color.White);
                     }
                     /*else if (boardState[x + y] == -1) {
                         Console.WriteLine()

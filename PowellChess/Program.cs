@@ -14,7 +14,7 @@ namespace PowellChess
         [STAThread]
         static void Main()
         {
-            using (var game = new Main())
+            using (var game = new GraphicalBoard())
                 game.Run();
         }
     }
