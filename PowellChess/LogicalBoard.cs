@@ -9,6 +9,8 @@ namespace PowellChess
     /// <summary>
     /// Used to represent the logic and enforce
     /// rules of a chess board.
+    /// The firstmost square in a board representation
+    /// array will always correspond to A1 on the chess board. 
     /// </summary>
     class LogicalBoard
     {
@@ -22,6 +24,9 @@ namespace PowellChess
         /// </summary>
         private int[] board;
 
+        /// <summary>
+        /// transforms index on 64 square board into piece on 120 square board
+        /// </summary>
         private int[] boardKey = new int[64] {
             21, 22, 23, 24, 25, 26, 27, 28,
             31, 32, 33, 34, 35, 36, 37, 38,
@@ -32,6 +37,45 @@ namespace PowellChess
             81, 82, 83, 84, 85, 86, 87, 88,
             91, 92, 93, 94, 95, 96, 97, 98
         };
+
+
+
+        /// <summary>
+        /// stores which sides turn it is
+        /// 0 for white, 1 for black        
+        /// </summary>
+        private int turn = 0;
+
+        /// <summary>
+        /// board index of the currently selected piece
+        /// used to save state of whether piece should be
+        /// moved or highlighted on click
+        /// selectedPieceIndex uses 120 square board indexing
+        /// </summary>
+        private int selectedPieceIndex = -1;
+
+        /// <summary>
+        /// array to remember the possible squares the selected piece could move to
+        /// </summary>
+        private int[] possibleMoves = new int[] {
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
+                -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
+                -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
+                -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
+                -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
+                -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
+                -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
+                -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+        };
+
+        /// <summary>
+        /// arrays of move offsets used when generating possible moves
+        /// </summary>
+        private int[] kingDirections = { -11, -10, -9, -1, 1, 9, 10, 11 };
 
         /// <summary>
         /// constructor for logical board returns self
@@ -49,7 +93,7 @@ namespace PowellChess
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
-                -1, 0, 0, 0, 0, 2, 0, 0, 0, -1,
+                -1, 0, 0, 0, 0, 12, 0, 0, 0, -1,
                 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
             };
@@ -58,8 +102,8 @@ namespace PowellChess
         /// <summary>
         /// Returns the current status of all squares.
         /// </summary>
-        /// <returns>int[64]</returns>
-        public int[] RetrieveBoardState()
+        /// <returns>Array of the pieces on the board.</returns>
+        public int[] GetBoardState()
         {
             int[] ret = new int[64];
 
@@ -72,6 +116,24 @@ namespace PowellChess
         }
 
         /// <summary>
+        /// Returns array of any squares that could be moved to
+        /// and need to be highlighted.
+        /// </summary>
+        /// <returns></returns>
+        public int[] GetHighlightedSquares()
+        {
+            int[] ret = new int[64];
+
+            for (int i = 0; i < 64; i++)
+            {
+                ret[i] = possibleMoves[boardKey[i]];
+            }
+
+            return ret;
+        }
+
+        //TODO probably unneeded
+        /// <summary>
         /// Return a boolean distinguishing whether the clicked square
         /// has a piece of color.
         /// </summary>
@@ -83,11 +145,119 @@ namespace PowellChess
         }
 
         /// <summary>
-        /// 
+        /// Determines if the clicked square has a piece to be moved
+        /// and if it that piece's color's turn. Returns true if new
+        /// squares should be highlighted otherwise false.
         /// </summary>
-        public void DiscoverMoves()
+        /// <param name="bi">board index of click</param>
+        /// <returns>bool</returns>
+        public void ClickedAt(int bi)
         {
-            return;
+            // 10x12 board contents of click position
+            int p = board[boardKey[bi]];
+
+            // index on 10x12 board of click
+            int index = boardKey[bi];
+
+            // selecting a piece, highlight here
+            if (selectedPieceIndex == -1)
+            {
+                // selecting white piece
+                if (turn == 0 && (p <= 10 && p > 0))
+                {
+                    DiscoverMoves(bi);
+                    selectedPieceIndex = index;
+                }
+                // selecting black piece
+                else if (turn == 1 && (p <= 20 && p > 10))
+                {
+                    DiscoverMoves(bi);
+                    selectedPieceIndex = index;
+                }
+            }
+            // attempting to move, check for valid move otherwise deselect
+            else
+            {
+                //if (turn == 0 && (p <= 10 && p > 0))
+                //{
+                if (possibleMoves[index] == 1)
+                {
+                    PerformMove(selectedPieceIndex, index);
+                    ClearPossibleMoves();
+                }
+                //}
+                //else if (turn == 1 && (p <= 20 && p > 10))
+                //{
+                //if (possibleMoves[index] == 1)
+                //{
+                //    PerformMove(selectedPieceIndex, index);
+                //    ClearPossibleMoves();
+                //}
+                //}
+            }
+        }
+
+        /// <summary>
+        /// Discover moves for a given piece.
+        /// </summary>
+        public void DiscoverMoves(int bi)
+        {
+            // piece on 120 square board
+            int p = board[boardKey[bi]];
+            int startingIndex = boardKey[bi];
+
+            // TODO determine whether piece is on the same side
+            int side;
+            int oppside;
+
+            // Kings moving
+            if (p == 2 || p == 12)
+            {
+                for (int t = 0; t < 8; t++)
+                {
+                    // TODO opposite side and captures
+                    // move to empty square
+                    if (board[startingIndex + kingDirections[t]] == 0)
+                    {
+                        possibleMoves[startingIndex + kingDirections[t]] = 1;
+                    }
+                }
+            }
+            //return;
+        }
+
+        /// <summary>
+        /// Move piece from selected piece index into the new position.
+        /// </summary>
+        /// <param name="oldPos">from index on 120 square board</param>
+        /// <param name="newPos">to index on 120 square board</param>
+        private void PerformMove(int oldPos, int newPos)
+        {
+            int temp = board[oldPos];
+            board[newPos] = temp;
+            board[oldPos] = 0;
+            turn = ((turn == 0) ? 1 : 0);
+        }
+
+        /// <summary>
+        /// Resets the possible moves board and selected piece.
+        /// </summary>
+        private void ClearPossibleMoves()
+        {
+            selectedPieceIndex = -1;
+
+            for (int c = 0; c < 64; c++)
+            {
+                possibleMoves[boardKey[c]] = 0;
+            }
+        }
+
+        /// <summary>
+        /// Resets all the logical functionality of the board
+        /// </summary>
+        public void ResetBoard()
+        {
+
         }
     }
 }

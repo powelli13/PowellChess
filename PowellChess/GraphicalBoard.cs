@@ -9,63 +9,65 @@ namespace PowellChess
 {
 
     /// <summary>
-    /// Constants for the graphical display.
-    /// </summary>
-    public class DisplaySettings
-    {
-        public const int squareSize = 72;
-        public const int edgePadding = 72;
-    }
-
-
-    /// <summary>
-    /// Used to control the display, click handling and graphical manipulations of squares.
-    /// </summary>
-    public class Square
-    {
-        /// <summary>
-        /// Propertires used for drawing square.
-        /// </summary>
-        public Rectangle rect;
-        public Texture2D texture;
-        public Color color = Color.White;
-
-        public int piece = 0;
-        public bool highlighted = false;
-
-        private int boardIndex;
-        
-
-        public Square(int x, int y, Texture2D t, int bi)
-        {
-            rect = new Rectangle(x, y, DisplaySettings.squareSize, DisplaySettings.squareSize);
-            texture = t;
-            boardIndex = bi;
-        }
-
-        public void Draw(SpriteBatch sb)
-        {
-            sb.Draw(texture, rect, color);
-            /*
-            if (highlighted)
-            {
-
-            }
-            */
-            /*
-            if (pieces != 0)
-            {
-            
-            }
-            */
-        }
-    }
-
-    /// <summary>
     /// This is the main type for your game.
     /// </summary>
     public class GraphicalBoard : Game
     {
+        /// <summary>
+        /// Constants for the graphical display.
+        /// </summary>
+        public class DisplaySettings
+        {
+            public const int squareSize = 72;
+            public const int edgePadding = 72;
+        }
+
+
+        /// <summary>
+        /// Used to control the display, click handling and graphical manipulations of squares.
+        /// </summary>
+        public class Square
+        {
+            /// <summary>
+            /// Propertires used for drawing square.
+            /// </summary>
+            public Rectangle rect;
+            public Texture2D texture;
+            public Texture2D highlightSquare;
+            public Color color = Color.White;
+
+            public int piece = 0;
+            public bool highlighted = false;
+
+            public int boardIndex;
+
+            //TODO find a better way to get this to show highlighted squares
+            public Square(int x, int y, Texture2D t, Texture2D hs, int bi, int p)
+            {
+                rect = new Rectangle(x, y, DisplaySettings.squareSize, DisplaySettings.squareSize);
+                texture = t;
+                highlightSquare = hs;
+                boardIndex = bi;
+                piece = p;
+            }
+
+            public void Draw(SpriteBatch sb, Dictionary<int, Texture2D> pieceImgs)
+            {
+                sb.Draw(texture, rect, color);
+                
+                if (highlighted)
+                {
+                    sb.Draw(highlightSquare, rect, color);
+                }
+                
+                //TODO verify that piece is in piece Imgs
+                if (piece != 0)
+                {
+                    sb.Draw(pieceImgs[piece], rect, color);
+                }
+            }
+        }
+
         private GraphicsDeviceManager graphics;
         private SpriteBatch spriteBatch;
         private Square[] squares = new Square[64];
@@ -81,8 +83,6 @@ namespace PowellChess
         private Texture2D lightSquare;
         private Texture2D darkSquare;
         private Texture2D highlightSquare;
-
-        private Texture2D whiteKing;
 
         private Dictionary<int, Texture2D> pieceSprites;
 
@@ -117,9 +117,12 @@ namespace PowellChess
             int boardIndex = 0;
             int xPos;
             int yPos;
+            
+            int[] startingPieces = logicalBoard.GetBoardState();
 
+            // TODO change square x y pos to switch where the top of the board is
             // spans across one row at a time starting with 8th row
-            for (int y = 0; y < 8; y++)
+            for (int y = 8; y > 0; y--)
             {
                 for (int x = 0; x < 8; x++)
                 {
@@ -128,9 +131,9 @@ namespace PowellChess
 
                     if ((x + y) % 2 == 0)
                     {
-                        squares[boardIndex] = new Square(xPos, yPos, lightSquare, boardIndex);
+                        squares[boardIndex] = new Square(xPos, yPos, darkSquare, highlightSquare, boardIndex, startingPieces[boardIndex]);
                     } else {
-                        squares[boardIndex] = new Square(xPos, yPos, darkSquare, boardIndex);
+                        squares[boardIndex] = new Square(xPos, yPos, lightSquare, highlightSquare, boardIndex, startingPieces[boardIndex]);
                     }
 
                     boardIndex++;
@@ -153,6 +156,7 @@ namespace PowellChess
             darkSquare = Content.Load<Texture2D>("dark_square");
             highlightSquare = Content.Load<Texture2D>("highlight_square");
             pieceSprites[2] = Content.Load<Texture2D>("white_king");
+            pieceSprites[12] = Content.Load<Texture2D>("black_king");
         }
 
         /// <summary>
@@ -171,45 +175,77 @@ namespace PowellChess
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || 
+                Keyboard.GetState().IsKeyDown(Keys.Escape))
+            {
                 Exit();
-            
+            }
+
             //HighlightHoverSquare();
-            //TODO handle click events
+            // handle clicking 
+            // Used to highlight squares that the mouse is hovering over
+            lastMouseState = mouseState;
+            mouseState = Mouse.GetState();
+            Point mousePosition = new Point(mouseState.X, mouseState.Y);
+
+            // if clicked on square
+            //      send square's board index
+            for (int i = 0; i < 64; i++)
+            {
+                if (squares[i].rect.Contains(mousePosition) &&
+                    lastMouseState.LeftButton == ButtonState.Pressed &&
+                    mouseState.LeftButton == ButtonState.Released)
+                {
+                    logicalBoard.ClickedAt(squares[i].boardIndex);
+                }
+            }
+
+
+            // retrieve highlighted squares
+            // retrieve board state
+            UpdateSquares();
 
             base.Update(gameTime);
         }
 
         /// <summary>
-        /// Highlights any square that the mouse is hovering over.
+        /// Send a click on a given board index to the logical board.
         /// </summary>
-        protected void HighlightHoverSquare()
+        /// <param name="bi">Index of the square on the board</param>
+        protected void SendClick(int bi)
         {
-
+            logicalBoard.ClickedAt(bi);
         }
 
+        /// <summary>
+        /// Updates pieces and highlighting for the squares.
+        /// </summary>
+        protected void UpdateSquares()
+        {
+            int[] highlights = logicalBoard.GetHighlightedSquares();
+            int[] boardState = logicalBoard.GetBoardState();
+
+            for (int i = 0; i < 64; i++)
+            {
+                squares[i].highlighted = ((highlights[i] == 1) ? true : false);
+                squares[i].piece = boardState[i];
+            }
+        }
+        
         /// <summary>
         /// This is called when the game should draw itself.
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            // TODO verify length of boardstate
-            int[] boardState = logicalBoard.RetrieveBoardState();
             GraphicsDevice.Clear(Color.LightGray);
-
-            // TODO move some of this mouse stuff out of the draw method
-            // Used to highlight squares that the mouse is hovering over
-            lastMouseState = mouseState;
-            mouseState = Mouse.GetState();
-            Point mousePosition = new Point(mouseState.X, mouseState.Y);
 
             spriteBatch.Begin();
 
             // draw board squares
             for (int si = 0; si < 64; si++)
             {
-                squares[si].Draw(spriteBatch);
+                squares[si].Draw(spriteBatch, pieceSprites);
             }
 
             /*
