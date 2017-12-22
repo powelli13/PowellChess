@@ -156,7 +156,9 @@ namespace PowellChess
             darkSquare = Content.Load<Texture2D>("dark_square");
             highlightSquare = Content.Load<Texture2D>("highlight_square");
             pieceSprites[2] = Content.Load<Texture2D>("white_king");
+            pieceSprites[4] = Content.Load<Texture2D>("white_rook");
             pieceSprites[12] = Content.Load<Texture2D>("black_king");
+            pieceSprites[14] = Content.Load<Texture2D>("black_rook");
         }
 
         /// <summary>

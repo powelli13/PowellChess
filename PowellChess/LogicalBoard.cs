@@ -76,6 +76,7 @@ namespace PowellChess
         /// arrays of move offsets used when generating possible moves
         /// </summary>
         private int[] kingDirections = { -11, -10, -9, -1, 1, 9, 10, 11 };
+        private int[] rookDirections = { -10, -1, 1, 10 };
 
         /// <summary>
         /// constructor for logical board returns self
@@ -86,14 +87,14 @@ namespace PowellChess
             board = new int[120] {
                 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                -1, 0, 0, 0, 0, 2, 0, 0, 0, -1,
+                -1, 4, 0, 0, 0, 2, 0, 0, 4, -1,
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
                 -1, 0, 0, 0, 0, 0, 0, 0, 0, -1,
-                -1, 0, 0, 0, 0, 12, 0, 0, 0, -1,
+                -1, 14, 0, 0, 0, 12, 0, 0, 14, -1,
                 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
             };
@@ -198,6 +199,29 @@ namespace PowellChess
         }
 
         /// <summary>
+        /// Takes an int representing the piece and determines
+        /// if other piece is on the opposite side or not.
+        /// </summary>
+        /// <param name="p"></param>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        public bool OppositeSide(int p, int o)
+        {
+            // piece white and other is black
+            if ((p > 0 && p < 10) && (o > 9 && o < 20))
+            {
+                return true;
+            }
+            // piece black and other is white
+            if ((o > 0 && o < 10) && (p > 9 && p < 20))
+            {
+                return true;
+            }
+            return false;
+        }
+
+
+        /// <summary>
         /// Discover moves for a given piece.
         /// </summary>
         public void DiscoverMoves(int bi)
@@ -210,6 +234,9 @@ namespace PowellChess
             int side;
             int oppside;
 
+            int tracer;
+            int tSquare;
+
             // Kings moving
             if (p == 2 || p == 12)
             {
@@ -220,6 +247,36 @@ namespace PowellChess
                     if (board[startingIndex + kingDirections[t]] == 0)
                     {
                         possibleMoves[startingIndex + kingDirections[t]] = 1;
+                    }
+                }
+            }
+            else if (p == 4 || p == 14)
+            {
+                for (int t = 0; t < 4; t++)
+                {
+                    tracer = startingIndex;
+                    while (true)
+                    {
+                        tracer += rookDirections[t];
+                        tSquare = board[tracer];
+                        // TODO captures and things
+                        if (tSquare == 0)
+                        {
+                            possibleMoves[tracer] = 1;
+                        }
+                        // capture possiblity
+                        else if (tSquare != 0 && tSquare != -1)
+                        {
+                            if (OppositeSide(p, tSquare))
+                            {
+                                possibleMoves[tracer] = 1;
+                            }
+                            break;
+                        }
+                        else if (tSquare == -1)
+                        {
+                            break;
+                        }
                     }
                 }
             }
